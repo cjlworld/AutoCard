@@ -227,9 +227,13 @@ public class AutoCardService implements AppService {
         try {
             login(username, password);
             if (!isOnline()) {
-                statusCode.setStatus(-1);
-                statusCode.setMessage((nickname == null ? username : nickname) + "登录失败");
-                return statusCode;
+                /* 这里 登录失败 就直接退出了, 我改成重新试一次 */
+                login(username, password);
+                if (!isOnline()) {
+                    statusCode.setStatus(-1);
+                    statusCode.setMessage((nickname == null ? username : nickname) + "，您的浙大统一身份认证登录失败了，请稍后再试。");
+                    return statusCode;
+                }
             }
             JSONObject userInfo = client.getUserInfo();
             if (nickname == null) {
@@ -239,7 +243,7 @@ public class AutoCardService implements AppService {
             String page = getPage();
             if (!appConfig.isTestMode() && isSubmited(page)) {
                 statusCode.setStatus(1);
-                statusCode.setMessage(nickname + "您好，今日已经打卡了，请明天再来");
+                statusCode.setMessage(nickname + "，您今日已经打卡了，请明天再来。");
                 LogUtils.printMessage(statusCode.getMessage(), LogUtils.Level.ERROR);
                 return statusCode;
             }
@@ -249,7 +253,7 @@ public class AutoCardService implements AppService {
             ArrayList<NameValuePair> info = getOldInfo(page);
             if (info == null) {
                 LogUtils.printMessage("打卡信息获取失败", LogUtils.Level.ERROR);
-                statusCode.setMessage(nickname + "的打卡信息获取失败，可能是打卡更新了或网络不稳定，请查看后台打卡日志输出");
+                statusCode.setMessage(nickname + "，您的打卡信息获取失败，可能是打卡更新了或网络不稳定，请查看后台打卡日志输出。");
                 statusCode.setStatus(-1);
                 return statusCode;
             }
@@ -281,7 +285,7 @@ public class AutoCardService implements AppService {
                 }
             }
 
-            String message = String.format("%s，你好，今日自动健康打卡状态：%s，打卡地区为：%s（如若区域不符，请次日手动打卡更改地址）",
+            String message = String.format("%s，您的今日自动健康打卡状态：%s，打卡地区为：%s（如若区域不符，请次日手动打卡更改地址）。",
                     nickname,
                     resp.getString("m"),
                     area);
@@ -307,7 +311,7 @@ public class AutoCardService implements AppService {
             LogUtils.printMessage("地点：" + area);
         } catch (Exception e) {
             statusCode.setStatus(10);
-            statusCode.setMessage(nickname + "发生未知打卡异常，请查看打卡日志");
+            statusCode.setMessage(nickname + "，发生未知打卡异常，请查看打卡日志。");
             LogUtils.printMessage(null, e, LogUtils.Level.ERROR);
         }
 
